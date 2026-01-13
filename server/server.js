@@ -5,24 +5,25 @@ import connectDB from "./configs/db.js";
 import userRouter from "./routes/userRoutes.js";
 import resumeRouter from "./routes/resumeRoutes.js";
 import aiRouter from "./routes/aiRoutes.js";
-import testimonialRoutes from "./routes/testimonialsRoutes.js"
+import testimonialRoutes from "./routes/testimonialsRoutes.js";
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-await connectDB()
-
-app.use(express.json())
+app.use(express.json());
 app.use(cors());
 
-app.get("/", (req, res) => {
+app.get("/", async (req, res) => {
+  try {
+    await connectDB();
     res.send("Server is live...");
+  } catch (err) {
+    res.status(500).send("DB Connection Failed");
+  }
 });
-app.use("/api/users", userRouter)
-app.use("/api/resumes", resumeRouter)
-app.use("/api/ai", aiRouter)
+
+app.use("/api/users", userRouter);
+app.use("/api/resumes", resumeRouter);
+app.use("/api/ai", aiRouter);
 app.use("/api/testimonials", testimonialRoutes);
 
-app.listen(PORT, () => {
-console.log(`Server is running on port ${PORT}`)
-})
+export default app;
