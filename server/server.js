@@ -9,58 +9,50 @@ import testimonialRoutes from "./routes/testimonialsRoutes.js";
 
 const app = express();
 
-// Middleware
+// CORS configuration - YE IMPORTANT HAI
+const corsOptions = {
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'https://ai-integrated-resume-builder-bnez.vercel.app',
+    'https://ai-integrated-resume-builder.vercel.app'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
-app.use(cors());
 
-// Health check route
-app.get("/", (req, res) => {
-  res.json({ 
-    status: "Server is running",
-    timestamp: new Date().toISOString()
-  });
+// Database connection
+let isConnected = false;
+const connectToDatabase = async () => {
+  if (isConnected) return;
+  try {
+    await connectDB();
+    isConnected = true;
+    console.log("DB Connected");
+  } catch (error) {
+    console.error("DB Connection Error:", error);
+  }
+};
+
+// Routes
+app.get("/", async (req, res) => {
+  await connectToDatabase();
+  res.json({ message: "Server is live..." });
 });
 
-// Database connection with error handling
-let cachedDb = null;
-
-async function connectToDatabase() {
-  if (cachedDb) {
-    return cachedDb;
-  }
-  
-  try {
-    cachedDb = await connectDB();
-    console.log("Database connected successfully");
-    return cachedDb;
-  } catch (error) {
-    console.error("Database connection error:", error);
-    throw error;
-  }
-}
-
-// Middleware to ensure DB connection
-app.use(async (req, res, next) => {
-  try {
-    await connectToDatabase();
-    next();
-  } catch (error) {
-    res.status(500).json({ error: "Database connection failed" });
-  }
-});
-
-// API Routes
 app.use("/api/users", userRouter);
 app.use("/api/resumes", resumeRouter);
 app.use("/api/ai", aiRouter);
 app.use("/api/testimonials", testimonialRoutes);
 
-// Error handler
+// Error handling
 app.use((err, req, res, next) => {
-  console.error("Error:", err);
-  res.status(500).json({ 
-    error: err.message || "Internal server error" 
-  });
+  console.error(err.stack);
+  res.status(500).json({ error: 'Something went wrong!' });
 });
 
 export default app;
