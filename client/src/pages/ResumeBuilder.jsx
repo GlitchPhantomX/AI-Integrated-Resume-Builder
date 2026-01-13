@@ -78,90 +78,98 @@ const ResumeBuilder = () => {
   };
 
   const loadExixtingResume = async () => {
-    try {
-      setIsLoading(true);
-      const { data } = await api.get(`/api/resumes/get/${resumeId}`, {
-        headers: { Authorization: token },
-      });
-      if (data?.resume) {
-        setResumeData(data.resume);
-        document.title = data.resume.title;
-        triggerAlert(
-          "Resume Loaded Successfully",
-          "Your resume details have been loaded for editing."
-        );
-      }
-    } catch (error) {
+  try {
+    setIsLoading(true);
+    const { data } = await api.get(`/api/resumes/get/${resumeId}`, {
+      headers: { 
+        Authorization: `Bearer ${token}` // Added "Bearer " prefix
+      },
+    });
+    
+    if (data?.resume) {
+      setResumeData(data.resume);
+      document.title = data.resume.title;
       triggerAlert(
-        "Failed to Load Resume",
-        "There was an issue loading your resume. Please try again."
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadExixtingResume();
-  }, []);
-
-  const saveResume = async () => {
-    try {
-      let updatedResumeData = structuredClone(resumeData);
-      if (typeof resumeData.personal_info.image === "object") {
-        delete updatedResumeData.personal_info.image;
-      }
-
-      const formData = new FormData();
-      formData.append("resumeId", resumeId);
-      formData.append("resumeData", JSON.stringify(updatedResumeData));
-
-      const { data } = await api.put("/api/resumes/update", formData, {
-        headers: { Authorization: token },
-      });
-
-      if (data?.resume) {
-        setResumeData(data.resume);
-        triggerAlert(
-          "Resume Saved Successfully!",
-          "Your latest updates have been securely saved. You can now preview or download your resume."
-        );
-      }
-    } catch (error) {
-      triggerAlert(
-        "Save Failed",
-        "An unexpected error occurred. Please try saving again."
+        "Resume Loaded Successfully",
+        "Your resume details have been loaded for editing."
       );
     }
-  };
+  } catch (error) {
+    console.error("Load Resume Error:", error);
+    triggerAlert(
+      "Failed to Load Resume",
+      error?.response?.data?.message || "There was an issue loading your resume. Please try again."
+    );
+  } finally {
+    setIsLoading(false);
+  }
+};
 
-  const changeResumeVisibility = async () => {
-    try {
-      const formData = new FormData();
-      formData.append("resumeId", resumeId);
-      formData.append(
-        "resumeData",
-        JSON.stringify({ public: !resumeData.public })
-      );
+// saveResume function - Updated
+const saveResume = async () => {
+  try {
+    let updatedResumeData = structuredClone(resumeData);
+    if (typeof resumeData.personal_info.image === "object") {
+      delete updatedResumeData.personal_info.image;
+    }
 
-      const { data } = await api.put(`/api/resumes/update`, formData, {
-        headers: { Authorization: token },
-      });
+    const formData = new FormData();
+    formData.append("resumeId", resumeId);
+    formData.append("resumeData", JSON.stringify(updatedResumeData));
 
-      setResumeData({ ...resumeData, public: !resumeData.public });
+    const { data } = await api.put("/api/resumes/update", formData, {
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data'
+      },
+    });
+
+    if (data?.resume) {
+      setResumeData(data.resume);
       triggerAlert(
-        "Visibility Updated",
-        `Your resume is now ${
-          !resumeData.public ? "publicly accessible" : "private"
-        } to others.`
-      );
-    } catch (error) {
-      triggerAlert(
-        "Update Failed",
-        "Could not change the resume visibility. Try again later."
+        "Resume Saved Successfully!",
+        "Your latest updates have been securely saved. You can now preview or download your resume."
       );
     }
-  };
+  } catch (error) {
+    console.error("Save Resume Error:", error);
+    triggerAlert(
+      "Save Failed",
+      error?.response?.data?.message || "An unexpected error occurred. Please try saving again."
+    );
+  }
+};
+
+// changeResumeVisibility function - Updated
+const changeResumeVisibility = async () => {
+  try {
+    const formData = new FormData();
+    formData.append("resumeId", resumeId);
+    formData.append(
+      "resumeData",
+      JSON.stringify({ public: !resumeData.public })
+    );
+
+    const { data } = await api.put(`/api/resumes/update`, formData, {
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data'
+      },
+    });
+
+    setResumeData({ ...resumeData, public: !resumeData.public });
+    triggerAlert(
+      "Visibility Updated",
+      `Your resume is now ${!resumeData.public ? "publicly accessible" : "private"} to others.`
+    );
+  } catch (error) {
+    console.error("Visibility Update Error:", error);
+    triggerAlert(
+      "Update Failed",
+      error?.response?.data?.message || "Could not change the resume visibility. Try again later."
+    );
+  }
+};
 
   const downloadResume = () => {
   // Wait a bit for styles to apply
